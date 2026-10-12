@@ -1,0 +1,10 @@
+ "use client";
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabase";
+export default function Login(){
+ const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [error,setError]=useState("");const [busy,setBusy]=useState(false);const router=useRouter();
+ async function submit(e:React.FormEvent){e.preventDefault();setBusy(true);setError("");try{const sb=supabaseBrowser();const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;const {data:admin}=await sb.from("admins").select("user_id").eq("user_id",data.user.id).maybeSingle();if(!admin){await sb.auth.signOut();throw new Error("This account is not on the admin allowlist.");}router.push("/admin");router.refresh();}catch(e){setError(e instanceof Error?e.message:"Unable to sign in.");}finally{setBusy(false)}}
+ return <main className="container admin-shell"><Link className="brand" href="/"><span className="brandmark">R</span> RESULT DESK</Link><div className="panel" style={{maxWidth:460,margin:"28px auto"}}><h1 style={{marginTop:0}}>Admin sign in</h1><p className="muted small">Restricted publishing access.</p><form onSubmit={submit}><div className="field"><label>Email</label><input type="email" required autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)}/></div><div className="field"><label>Password</label><input type="password" required autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></div>{error&&<div className="notice">{error}</div>}<button className="btn" style={{width:"100%",marginTop:14}} disabled={busy}>{busy?"Signing in…":"Sign in securely"}</button></form><p className="small muted">Admin users must be created in Supabase and added to the admins table.</p></div></main>;
+}
